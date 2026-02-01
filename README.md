@@ -1,7 +1,3 @@
-# Panduan Menjalankan Proyek Indeks Desa Secara Lokal
-
-Panduan ini menjelaskan langkah-langkah untuk menjalankan aplikasi "Indeks Desa" di komputer lokal Anda.
-
 ## Persyaratan Sistem
 
 Pastikan Anda sudah menginstal perangkat lunak berikut:
@@ -12,7 +8,7 @@ Pastikan Anda sudah menginstal perangkat lunak berikut:
 ## Langkah-langkah Instalasi
 
 ### 1. Persiapan File
-Git clone https://github.com/unedohcsirait/desa-indeks-system
+`Git clone https://github.com/unedohcsirait/desa-indeks-system`
 
 ### 2. Instalasi Dependensi
 Buka terminal/command prompt di dalam folder proyek (`Desa-Indeks-System`) dan jalankan:
