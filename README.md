@@ -8,7 +8,8 @@ Pastikan Anda sudah menginstal perangkat lunak berikut:
 ## Langkah-langkah Instalasi
 
 ### 1. Persiapan File
-`Git clone https://github.com/unedohcsirait/desa-indeks-system`
+```bash
+git clone https://github.com/unedohcsirait/desa-indeks-system
 
 ### 2. Instalasi Dependensi
 Buka terminal/command prompt di dalam folder proyek (`Desa-Indeks-System`) dan jalankan:
