@@ -29,6 +29,7 @@ Buat file baru bernama `.env` di folder utama proyek dan tambahkan konfigurasi b
 
 ```env
 DATABASE_URL=postgres://username:password@localhost:5432/indeks_desa
+```
 
 
 ### 5. Inisialisasi Database (Push Schema)
