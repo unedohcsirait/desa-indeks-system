@@ -1,9 +1,11 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Database, ClipboardList, Menu, UserCircle, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, Database, ClipboardList, Menu, UserCircle, Moon, Sun, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 interface LayoutShellProps {
   children: ReactNode;
@@ -12,6 +14,8 @@ interface LayoutShellProps {
 
 export function LayoutShell({ children, title }: LayoutShellProps) {
   const [location] = useLocation();
+  const [, setLocation] = useLocation();
+  const { user, logout } = useAuth();
   const [theme, setTheme] = useState<"light" | "dark">(
     () => (localStorage.getItem("theme") as "light" | "dark") || "light"
   );
@@ -25,6 +29,11 @@ export function LayoutShell({ children, title }: LayoutShellProps) {
 
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
+  const handleLogout = async () => {
+    await logout();
+    setLocation("/login");
+  };
+
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/villages", label: "Data Desa", icon: Database },
@@ -34,15 +43,17 @@ export function LayoutShell({ children, title }: LayoutShellProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-white dark:bg-slate-950 border-r border-border">
       <div className="p-6 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <ClipboardList className="text-white w-6 h-6" />
+        <Link href="/">
+          <div className="flex items-center gap-3 cursor-pointer group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              <ClipboardList className="text-white w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="font-display font-bold text-lg leading-tight dark:text-white group-hover:text-primary transition-colors">Indeks Desa</h1>
+              <p className="text-xs text-muted-foreground font-medium">System Admin</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-display font-bold text-lg leading-tight dark:text-white">Indeks Desa</h1>
-            <p className="text-xs text-muted-foreground font-medium">System Admin</p>
-          </div>
-        </div>
+        </Link>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
@@ -66,16 +77,40 @@ export function LayoutShell({ children, title }: LayoutShellProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-border/50">
-        <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-              <UserCircle className="w-6 h-6 text-slate-400" />
+      <div className="p-4 border-t border-border/50 space-y-4">
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 overflow-hidden flex-1">
+              <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                <UserCircle className="w-6 h-6 text-slate-400" />
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-semibold truncate dark:text-white">
+                  {user?.username || "User"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email || "Email"}</p>
+              </div>
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold truncate dark:text-white">Administrator</p>
-              <p className="text-xs text-muted-foreground truncate">Sistem Indeks Desa</p>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                  <Menu className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <User className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -91,12 +126,14 @@ export function LayoutShell({ children, title }: LayoutShellProps) {
 
       {/* Mobile Sidebar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <ClipboardList className="text-white w-5 h-5" />
+        <Link href="/">
+          <div className="flex items-center gap-2 cursor-pointer group">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+              <ClipboardList className="text-white w-5 h-5" />
+            </div>
+            <span className="font-bold text-sm dark:text-white group-hover:text-primary transition-colors">Indeks Desa</span>
           </div>
-          <span className="font-bold text-sm dark:text-white">Indeks Desa</span>
-        </div>
+        </Link>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}

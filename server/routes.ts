@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import ExcelJS from 'exceljs';
+import { hashPassword, verifyPassword, authMiddleware } from "./auth";
 
 // Constants for Dimensions and Weights
 const DIMENSIONS = [
@@ -19,20 +20,124 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // === AUTH ROUTES ===
+  app.post(api.auth.login.path, async (req, res) => {
+    try {
+      const input = api.auth.login.input.parse(req.body);
+      const user = await storage.getUserByUsername(input.username);
+
+      if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      const isPasswordValid = await verifyPassword(input.password, user.passwordHash);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Set session
+      req.session!.userId = user.id;
+      req.session!.username = user.username;
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+        },
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      throw err;
+    }
+  });
+
+  app.post(api.auth.logout.path, (req, res) => {
+    req.session!.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Failed to logout" });
+      }
+      res.json({ success: true, message: "Logged out successfully" });
+    });
+  });
+
+  app.get(api.auth.me.path, authMiddleware, async (req, res) => {
+    const user = await storage.getUserById(req.userId!);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+    });
+  });
+
+  app.put(api.auth.profile.path, authMiddleware, async (req, res) => {
+    try {
+      const input = api.auth.profile.input.parse(req.body);
+      const user = await storage.getUserById(req.userId!);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if new username already exists (if different)
+      if (input.username && input.username !== user.username) {
+        const existing = await storage.getUserByUsername(input.username);
+        if (existing) {
+          return res.status(400).json({ message: "Username already taken" });
+        }
+      }
+
+      // Check if new email already exists (if different)
+      if (input.email) {
+        const existing = await storage.getUserByEmail(input.email);
+        if (existing && existing.id !== user.id) {
+          return res.status(400).json({ message: "Email already taken" });
+        }
+      }
+
+      const updates: any = {};
+      if (input.username) updates.username = input.username;
+      if (input.email) updates.email = input.email;
+      if (input.password) {
+        updates.passwordHash = await hashPassword(input.password);
+      }
+
+      const updated = await storage.updateUser(req.userId!, updates);
+
+      res.json({
+        id: updated.id,
+        username: updated.username,
+        email: updated.email,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: err.errors });
+      }
+      throw err;
+    }
+  });
+
   // === VILLAGES ===
-  app.get(api.villages.list.path, async (req, res) => {
+  app.get(api.villages.list.path, authMiddleware, async (req, res) => {
     const search = req.query.search as string | undefined;
     const result = await storage.getVillages(search);
     res.json(result);
   });
 
-  app.get(api.villages.get.path, async (req, res) => {
+  app.get(api.villages.get.path, authMiddleware, async (req, res) => {
     const result = await storage.getVillage(Number(req.params.id));
     if (!result) return res.status(404).json({ message: "Village not found" });
     res.json(result);
   });
 
-  app.post(api.villages.create.path, async (req, res) => {
+  app.post(api.villages.create.path, authMiddleware, async (req, res) => {
     try {
       const input = api.villages.create.input.parse(req.body);
       const result = await storage.createVillage(input);
@@ -45,7 +150,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put(api.villages.update.path, async (req, res) => {
+  app.put(api.villages.update.path, authMiddleware, async (req, res) => {
     try {
       const input = api.villages.update.input.parse(req.body);
       const result = await storage.updateVillage(Number(req.params.id), input);
@@ -57,26 +162,26 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.villages.delete.path, async (req, res) => {
+  app.delete(api.villages.delete.path, authMiddleware, async (req, res) => {
     await storage.deleteVillage(Number(req.params.id));
     res.status(204).send();
   });
 
   // === ASSESSMENTS ===
-  app.get(api.assessments.list.path, async (req, res) => {
+  app.get(api.assessments.list.path, authMiddleware, async (req, res) => {
     const villageId = req.query.villageId ? Number(req.query.villageId) : undefined;
     const year = req.query.year ? Number(req.query.year) : undefined;
     const result = await storage.getAssessments(villageId, year);
     res.json(result);
   });
 
-  app.get(api.assessments.get.path, async (req, res) => {
+  app.get(api.assessments.get.path, authMiddleware, async (req, res) => {
     const result = await storage.getAssessment(Number(req.params.id));
     if (!result) return res.status(404).json({ message: "Assessment not found" });
     res.json(result);
   });
 
-  app.post(api.assessments.create.path, async (req, res) => {
+  app.post(api.assessments.create.path, authMiddleware, async (req, res) => {
     try {
       const input = api.assessments.create.input.parse(req.body);
       const result = await storage.createAssessment(input);
@@ -87,7 +192,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put(api.assessments.updateValues.path, async (req, res) => {
+  app.put(api.assessments.updateValues.path, authMiddleware, async (req, res) => {
     try {
       const input = api.assessments.updateValues.input.parse(req.body);
       await storage.bulkUpdateAssessmentValues(Number(req.params.id), input.values);
@@ -98,7 +203,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.assessments.calculate.path, async (req, res) => {
+  app.post(api.assessments.calculate.path, authMiddleware, async (req, res) => {
     const id = Number(req.params.id);
     const assessment = await storage.getAssessment(id);
     if (!assessment) return res.status(404).json({ message: "Assessment not found" });
@@ -150,7 +255,7 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  app.get(api.assessments.exportBulk.path, async (req, res) => {
+  app.get(api.assessments.exportBulk.path, authMiddleware, async (req, res) => {
     const year = req.query.year ? Number(req.query.year) : undefined;
     const assessments = await storage.getAssessments(undefined, year);
     
@@ -213,7 +318,7 @@ export async function registerRoutes(
     res.end();
   });
 
-  app.get(api.assessments.export.path, async (req, res) => {
+  app.get(api.assessments.export.path, authMiddleware, async (req, res) => {
     const id = Number(req.params.id);
     const assessment = await storage.getAssessment(id);
     if (!assessment) return res.status(404).json({ message: "Assessment not found" });
@@ -246,7 +351,7 @@ export async function registerRoutes(
     res.end();
   });
 
-  app.delete(api.assessments.delete.path, async (req, res) => {
+  app.delete(api.assessments.delete.path, authMiddleware, async (req, res) => {
     await storage.deleteAssessment(Number(req.params.id));
     res.status(204).send();
   });

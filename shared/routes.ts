@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertVillageSchema, insertAssessmentSchema, villages, assessments } from './schema';
+import { insertVillageSchema, insertAssessmentSchema, insertUserSchema, villages, assessments } from './schema';
 
 // ============================================
 // SHARED ERROR SCHEMAS
@@ -21,6 +21,64 @@ export const errorSchemas = {
 // API CONTRACT
 // ============================================
 export const api = {
+  auth: {
+    login: {
+      method: 'POST' as const,
+      path: '/api/auth/login',
+      input: z.object({
+        username: z.string().min(1, "Username is required"),
+        password: z.string().min(1, "Password is required"),
+      }),
+      responses: {
+        200: z.object({
+          success: z.boolean(),
+          user: z.object({
+            id: z.number(),
+            username: z.string(),
+            email: z.string(),
+          }),
+        }),
+        401: z.object({ message: z.string() }),
+      },
+    },
+    logout: {
+      method: 'POST' as const,
+      path: '/api/auth/logout',
+      responses: {
+        200: z.object({ success: z.boolean(), message: z.string() }),
+      },
+    },
+    me: {
+      method: 'GET' as const,
+      path: '/api/auth/me',
+      responses: {
+        200: z.object({
+          id: z.number(),
+          username: z.string(),
+          email: z.string(),
+        }),
+        401: z.object({ message: z.string() }),
+      },
+    },
+    profile: {
+      method: 'PUT' as const,
+      path: '/api/auth/profile',
+      input: z.object({
+        username: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        password: z.string().min(6).optional(),
+      }),
+      responses: {
+        200: z.object({
+          id: z.number(),
+          username: z.string(),
+          email: z.string(),
+        }),
+        400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+      },
+    },
+  },
   villages: {
     list: {
       method: 'GET' as const,

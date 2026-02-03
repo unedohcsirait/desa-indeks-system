@@ -1,6 +1,7 @@
 import { db } from "./db";
 import {
-  villages, assessments, assessmentValues,
+  users, villages, assessments, assessmentValues,
+  type User, type InsertUser,
   type Village, type InsertVillage,
   type Assessment, type InsertAssessment,
   type AssessmentValue, type InsertAssessmentValue,
@@ -9,6 +10,12 @@ import {
 import { eq, and, sql, desc } from "drizzle-orm";
 
 export interface IStorage {
+  // User operations
+  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
+
   // Village operations
   getVillages(search?: string): Promise<Village[]>;
   getVillage(id: number): Promise<Village | undefined>;
@@ -29,12 +36,38 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // === User operations ===
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserById(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User> {
+    const [updated] = await db.update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updated;
+  }
+
+  // === Village operations ===
   async getVillages(search?: string): Promise<Village[]> {
-    let query = db.select().from(villages);
     if (search) {
-      query.where(sql`lower(${villages.name}) LIKE lower(${`%${search}%`})`);
+      return await db.select().from(villages)
+        .where(sql`lower(${villages.name}) LIKE lower(${`%${search}%`})`)
+        .orderBy(desc(villages.createdAt));
     }
-    return await query.orderBy(desc(villages.createdAt));
+    return await db.select().from(villages).orderBy(desc(villages.createdAt));
   }
 
   async getVillage(id: number): Promise<Village | undefined> {

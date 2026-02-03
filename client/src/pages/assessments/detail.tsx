@@ -139,14 +139,14 @@ export default function AssessmentDetail() {
             <CardHeader className="pb-3 hidden lg:block">
               <CardTitle className="text-sm uppercase text-muted-foreground font-bold tracking-wider dark:text-slate-400">Dimensions</CardTitle>
             </CardHeader>
-            <CardContent className="p-2 overflow-x-auto">
+            <CardContent className="p-3 md:p-4 overflow-x-auto scrollbar-hide">
               <Tabs 
                 orientation="vertical" 
                 value={activeTab} 
                 onValueChange={setActiveTab}
                 className="w-full"
               >
-                <TabsList className="flex lg:flex-col h-auto w-full bg-transparent gap-1">
+                <TabsList className="flex lg:flex-col h-auto w-full bg-transparent gap-2 px-4 lg:px-1 pb-1 justify-start">
                   {DIMENSIONS.map((dim) => {
                     const dimScore = assessment.dimensionScores?.[dim.name];
                     const isActive = activeTab === dim.id.toString();
@@ -156,20 +156,23 @@ export default function AssessmentDetail() {
                         key={dim.id} 
                         value={dim.id.toString()}
                         className={cn(
-                          "flex-shrink-0 lg:w-full justify-between px-3 py-2 lg:px-4 lg:py-3 h-auto text-left rounded-lg transition-all",
+                          "flex-shrink-0 lg:w-full justify-start lg:justify-between px-4 py-2.5 lg:px-4 lg:py-3 h-auto text-left rounded-lg transition-all border-2",
                           isActive 
-                            ? "bg-primary text-primary-foreground shadow-md" 
-                            : "hover:bg-slate-100 dark:hover:bg-slate-800 data-[state=active]:bg-primary"
+                            ? "bg-primary text-white shadow-md border-primary !bg-primary !text-white" 
+                            : "border-transparent hover:bg-slate-100 dark:hover:bg-slate-800 data-[state=active]:bg-primary data-[state=active]:text-white"
                         )}
                       >
                         <div className="flex flex-col items-start">
-                          <span className={cn("font-bold text-xs lg:text-sm whitespace-nowrap", isActive ? "text-white" : "dark:text-slate-200")}>{dim.name}</span>
-                          <span className={cn("text-[10px] lg:text-xs opacity-80", isActive ? "text-primary-foreground" : "text-muted-foreground dark:text-slate-400")}>
+                          <span className={cn("font-bold text-xs lg:text-sm whitespace-nowrap", isActive ? "text-white !text-white" : "text-slate-700 dark:text-slate-200")}>{dim.name}</span>
+                          <span className={cn("text-[10px] lg:text-xs opacity-90", isActive ? "text-white/90 !text-white/90" : "text-muted-foreground dark:text-slate-400")}>
                             {dim.weight}%
                           </span>
                         </div>
                         {dimScore !== undefined && (
-                          <span className="font-mono text-[10px] lg:text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded ml-2">
+                          <span className={cn(
+                            "font-mono text-[10px] lg:text-xs font-bold px-1.5 py-0.5 rounded ml-auto lg:ml-2",
+                            isActive ? "bg-white/20 text-white !text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                          )}>
                             {Number(dimScore).toFixed(1)}
                           </span>
                         )}

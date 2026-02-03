@@ -5,6 +5,15 @@ import { z } from "zod";
 
 // === TABLE DEFINITIONS ===
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const villages = pgTable("villages", {
   id: serial("id").primaryKey(),
   code: text("code"), // Kode Desa
@@ -59,12 +68,15 @@ export const assessmentValuesRelations = relations(assessmentValues, ({ one }) =
 
 // === BASE SCHEMAS ===
 
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertVillageSchema = createInsertSchema(villages).omit({ id: true, createdAt: true });
 export const insertAssessmentSchema = createInsertSchema(assessments).omit({ id: true, createdAt: true, updatedAt: true, status: true, totalScore: true, dimensionScores: true });
 export const insertAssessmentValueSchema = createInsertSchema(assessmentValues).omit({ id: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
 
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Village = typeof villages.$inferSelect;
 export type InsertVillage = z.infer<typeof insertVillageSchema>;
 export type Assessment = typeof assessments.$inferSelect;
