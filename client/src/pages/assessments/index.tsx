@@ -72,6 +72,16 @@ export default function AssessmentList() {
     a.status?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Group assessments by year
+  const groupedAssessments = filteredAssessments?.reduce((acc, curr) => {
+    const year = curr.year;
+    if (!acc[year]) acc[year] = [];
+    acc[year].push(curr);
+    return acc;
+  }, {} as Record<number, typeof filteredAssessments>);
+
+  const sortedYears = Object.keys(groupedAssessments || {}).map(Number).sort((a, b) => b - a);
+
   return (
     <LayoutShell title="Penilaian Indeks Desa">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
@@ -155,150 +165,92 @@ export default function AssessmentList() {
         </div>
       </div>
 
-      {/* Mobile View: Cards */}
-      <div className="grid grid-cols-1 gap-4 lg:hidden">
-        {isLoading ? (
-          [1, 2, 3].map(i => (
-            <Card key={i} className="p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-              <div className="flex justify-between">
-                <Skeleton className="h-6 w-20 rounded-full" />
-                <Skeleton className="h-8 w-24" />
+      {isLoading ? (
+        <div className="space-y-8">
+          {[1, 2].map(i => (
+            <div key={i} className="space-y-4">
+              <Skeleton className="h-8 w-32" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map(j => (
+                  <Card key={j} className="p-4 space-y-3">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </Card>
+                ))}
               </div>
-            </Card>
-          ))
-        ) : assessments?.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-800">
-            No assessments found.
-          </div>
-        ) : (
-          filteredAssessments?.map((assessment) => (
-            <Card key={assessment.id} className="p-4 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                    <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900 dark:text-slate-100">{assessment.village?.name}</div>
-                    <div className="text-xs text-muted-foreground dark:text-slate-400">{assessment.village?.district}</div>
-                  </div>
-                </div>
-                <div className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded dark:text-slate-300">
-                  {assessment.year}
-                </div>
+            </div>
+          ))}
+        </div>
+      ) : sortedYears.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-800">
+          No assessments found.
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {sortedYears.map(year => (
+            <div key={year} className="space-y-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Tahun {year}</h2>
+                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+                <span className="text-xs font-medium text-muted-foreground bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                  {groupedAssessments![year].length} Data
+                </span>
               </div>
               
-              <div className="flex justify-between items-center mt-4 pt-4 border-t dark:border-slate-800">
-                <div className="flex flex-col gap-1">
-                  <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Status & Skor</div>
-                  <div className="flex items-center gap-2">
-                    {assessment.status ? (
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", getStatusColor(assessment.status))}>
-                        {assessment.status}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground italic text-[10px]">In Progress</span>
-                    )}
-                    <span className="font-mono text-sm dark:text-slate-300">{assessment.totalScore || "-"}</span>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
-                    onClick={() => handleDelete(assessment.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <Link href={`/assessments/${assessment.id}`}>
-                    <Button size="sm" className="h-8 text-xs">
-                      Detail
-                      <ArrowRight className="w-3 h-3 ml-1" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* Desktop View: Table */}
-      <div className="hidden lg:block bg-white dark:bg-slate-900 rounded-xl shadow-sm border dark:border-slate-800 overflow-hidden">
-        <Table>
-          <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
-            <TableRow className="dark:border-slate-800">
-              <TableHead className="font-semibold text-slate-900 dark:text-slate-100">Village</TableHead>
-              <TableHead className="font-semibold text-slate-900 dark:text-slate-100">Year</TableHead>
-              <TableHead className="font-semibold text-slate-900 dark:text-slate-100">Status</TableHead>
-              <TableHead className="font-semibold text-slate-900 dark:text-slate-100">Score</TableHead>
-              <TableHead className="text-right dark:text-slate-100">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 dark:text-slate-400">Loading...</TableCell>
-              </TableRow>
-            ) : assessments?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground dark:text-slate-500">
-                  No assessments found. Start one to track village progress.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredAssessments?.map((assessment) => (
-                <TableRow key={assessment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors dark:border-slate-800">
-                  <TableCell className="font-medium dark:text-slate-200">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                        <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                      </div>
-                      <div>
-                        <div>{assessment.village?.name}</div>
-                        <div className="text-xs text-muted-foreground dark:text-slate-400">{assessment.village?.district}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groupedAssessments![year].map((assessment) => (
+                  <Card key={assessment.id} className="p-4 dark:bg-slate-900 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                          <FileText className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 dark:text-slate-100 line-clamp-1">{assessment.village?.name}</div>
+                          <div className="text-xs text-muted-foreground dark:text-slate-400">{assessment.village?.district}</div>
+                        </div>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="dark:text-slate-300">{assessment.year}</TableCell>
-                  <TableCell>
-                    {assessment.status ? (
-                      <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", getStatusColor(assessment.status))}>
-                        {assessment.status}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground italic text-xs">In Progress</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-mono dark:text-slate-300">{assessment.totalScore || "-"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link href={`/assessments/${assessment.id}`}>
-                        <Button variant="outline" size="sm" className="hover:border-primary hover:text-primary dark:border-slate-700 dark:text-slate-200">
-                          Details
-                          <ArrowRight className="w-3 h-3 ml-2" />
+                    
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t dark:border-slate-800">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Status & Skor</div>
+                        <div className="flex items-center gap-2">
+                          {assessment.status ? (
+                            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", getStatusColor(assessment.status))}>
+                              {assessment.status}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground italic text-[10px]">In Progress</span>
+                          )}
+                          <span className="font-mono text-sm dark:text-slate-300">{assessment.totalScore || "-"}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                          onClick={() => handleDelete(assessment.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                      </Link>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(assessment.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <Link href={`/assessments/${assessment.id}`}>
+                          <Button size="sm" className="h-8 text-xs">
+                            Detail
+                            <ArrowRight className="w-3 h-3 ml-1" />
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </LayoutShell>
   );
 }

@@ -33,9 +33,11 @@ export default function LoginPage() {
     onSuccess: async () => {
       // Invalidate the auth query so it refetches
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      // Give it a moment for the query to refetch
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Clear cache and ensure fresh data
+      await queryClient.resetQueries({ queryKey: ["auth", "me"] });
       setLocation("/");
+      // Force reload to ensure session is recognized if needed
+      window.location.href = "/";
     },
   });
 
