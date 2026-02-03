@@ -1,44 +1,27 @@
 import 'dotenv/config';
-import { db } from "../server/db";
-import { users } from "../shared/schema";
-import { hashPassword } from "../server/auth";
+import { db } from "../db";
+import { villages } from "../../shared/schema";
 
-async function seedUsers() {
+async function importVillages() {
   try {
-    // Check if users already exist
-    const existingUsers = await db.select().from(users);
-    
-    if (existingUsers.length > 0) {
-      console.log("Users already exist in database. Skipping seed.");
-      return;
-    }
-
-    // Hash password for test user
-    const hashedPassword = await hashPassword("password123");
-
-    // Create test users
-    const testUsers = [
-      {
-        username: "admin",
-        email: "admin@example.com",
-        passwordHash: hashedPassword,
-      },
-      {
-        username: "user",
-        email: "user@example.com",
-        passwordHash: hashedPassword,
-      },
+    const data = [
+      { name: "Desa Kebon", district: "Kecamatan Utara", regency: "Kabupaten Indah", province: "Jawa Barat", code: "32.01.01.2001" },
+      { name: "Desa Sawah", district: "Kecamatan Selatan", regency: "Kabupaten Indah", province: "Jawa Barat", code: "32.01.01.2002" },
+      { name: "Desa Hutan", district: "Kecamatan Timur", regency: "Kabupaten Indah", province: "Jawa Barat", code: "32.01.01.2003" },
+      { name: "Desa Gunung", district: "Kecamatan Barat", regency: "Kabupaten Indah", province: "Jawa Barat", code: "32.01.01.2004" }
     ];
 
-    await db.insert(users).values(testUsers);
-    console.log("✓ Users seeded successfully");
-    console.log("Test user credentials:");
-    console.log("- Username: admin, Password: password123");
-    console.log("- Username: user, Password: password123");
+    console.log("Importing villages...");
+    for (const item of data) {
+      await db.insert(villages).values(item);
+      console.log(`✓ Imported ${item.name}`);
+    }
+    console.log("Village import completed!");
+    process.exit(0);
   } catch (error) {
-    console.error("Error seeding users:", error);
+    console.error("Error importing villages:", error);
     process.exit(1);
   }
 }
 
-seedUsers();
+importVillages();
