@@ -39,13 +39,20 @@ export async function registerRoutes(
       req.session!.userId = user.id;
       req.session!.username = user.username;
 
-      res.json({
-        success: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-        },
+      // Save session explicitly to ensure it's written before response
+      req.session!.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Failed to save session" });
+        }
+        res.json({
+          success: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+          },
+        });
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
